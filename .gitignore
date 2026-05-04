@@ -1,0 +1,22 @@
+# Data files mentioned in README
+data/raw/*.mat
+data/processed/*.npy
+data/processed/*.csv
+
+# Project-specific artifacts
+results/plots/*.png
+results/plots/*.pdf
+models/saved_models/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
