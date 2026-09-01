@@ -43,15 +43,15 @@ including Salzgitter AG and E-Bikes Axess.
 
 ### Training output
 
-![Training output](assets/screenshots/training_output.png)
+![Training output](screenshots/training_output.png)
 
 ### Training curves
 
-![Training curves](assets/screenshots/lstm_training_curves.png)
+![Training curves](screenshots/lstm_training_curves.png)
 
 ### SOH prediction vs actual
 
-![SOH predictions](assets/screenshots/lstm_predictions.png)
+![SOH predictions](screenshots/lstm_predictions.png)
 
 *Evaluated on held-out test cycles from the NASA PCoE Battery Dataset.*
 *LSTM achieves 56% lower MAE than SVM and 28% lower MAE than Random Forest.*
