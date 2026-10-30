@@ -35,15 +35,22 @@ for partners including Salzgitter AG and E-Bikes Axess. This repo uses no compan
 
 ## Results
 
+> **Pipeline corrected (Oct 2026).** The first version used two inputs that encode the target
+> (discharge capacity = SOH × 2 Ah, discharge time ≈ SOH × 3600 s) and predicted only one cycle
+> ahead, which inflated R². Both inputs were removed and the model now predicts SOH **10 cycles
+> ahead**, compared against a persistence baseline. LSTM/RNN numbers must be re-generated with
+> `python src/train.py --model all`; the screenshots below are from the earlier run.
+
 | Model | MAE | RMSE | R² |
 |-------|-----|------|----|
-| LSTM | 0.0057 | 0.0069 | 0.9614 |
-| RNN | 0.026 | 0.033 | 0.89 |
-| Random Forest | 0.041 | 0.055 | 0.81 |
-| SVM | 0.052 | 0.068 | 0.74 |
+| Persistence baseline ("SOH stays the same") | 0.0120 | 0.0136 | 0.837 |
+| Random Forest | 0.0042 | 0.0052 | 0.976 |
+| SVM (last-cycle features) | 0.0107 | 0.0134 | 0.842 |
+| LSTM / RNN | re-run pending | | |
 
-*Trained on synthetic NASA-like dataset — 800 cycles across 4 batteries,
-680 sequences with seq_len=30, 7 features. Split: 475 train / 103 val / 102 test sequences.*
+*Synthetic NASA-like dataset — 800 cycles across 4 cells, 5 features per cycle, 30-cycle windows,
+10-cycle horizon → 644 sequences (450 train / 97 val / 97 test). The test set is the later life of
+cell 4, which training never sees.*
 
 ### Training output
 
@@ -58,13 +65,11 @@ for partners including Salzgitter AG and E-Bikes Axess. This repo uses no compan
 ![SOH predictions](screenshots/lstm_predictions.png)
 
 *Evaluated on the held-out test split of the synthetic dataset.*
-*On this split, LSTM MAE is about 89% lower than SVM and 86% lower than Random Forest.*
 
 **Key observations:**
-- LSTM captures long-range capacity fade patterns that tree-based models miss
-- RNN trains 2× faster than LSTM with only moderate accuracy loss — useful for rapid prototyping
+- The persistence baseline is the bar to beat: a model has to predict the *change* in SOH, not repeat it
 - The chronological split puts the later cycles of cell 4 in the test set, so training never saw that cell — but all 4 synthetic cells follow the same degradation law, so real cell-to-cell generalisation still needs leave-one-cell-out validation on NASA PCoE cells (B0005–B0018)
-- Inputs are 7 per-cycle features: discharge capacity, mean/min voltage, mean current, mean/max temperature, discharge time
+- Inputs are 5 per-cycle features: mean/min voltage, mean current, mean/max temperature
 
 *Results on the held-out test set of the synthetic NASA-like dataset. The data loader also supports the public NASA PCoE Battery Dataset.*
 
@@ -153,15 +158,13 @@ jupyter>=1.0.0
 SOH = 1.0 at beginning of life, degrades toward 0.8 (end-of-life threshold).
 
 **Sequence modelling:** Each training sample is a window of 30 charge/discharge cycles,
-with the target being the SOH value at cycle t+1.
+with the target being the SOH value 10 cycles after the window.
 
-**Features (7 per cycle):** discharge capacity, mean and min voltage, mean current,
-mean and max temperature, discharge time.
+**Features (5 per cycle):** mean and min voltage, mean current, mean and max temperature.
+Discharge capacity and discharge time are excluded because they encode SOH directly.
 
-**Known limitation:** discharge capacity equals SOH × rated capacity, so the input window already
-contains SOH up to cycle t while the model predicts SOH at t+1. A naive "repeat last value" baseline
-would score close to the LSTM. Next steps: drop capacity-derived inputs, report a persistence
-baseline, and predict several cycles ahead (e.g. SOH at t+10 or remaining useful life).
+**Target:** SOH 10 cycles after the input window (`PREDICTION_HORIZON` in `src/data_loader.py`),
+reported next to a persistence baseline.
 
 ---
 
