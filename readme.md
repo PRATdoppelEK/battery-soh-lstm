@@ -63,8 +63,8 @@ for partners including Salzgitter AG and E-Bikes Axess. This repo uses no compan
 **Key observations:**
 - LSTM captures long-range capacity fade patterns that tree-based models miss
 - RNN trains 2× faster than LSTM with only moderate accuracy loss — useful for rapid prototyping
-- Generalisation to unseen cells is not tested yet — next step: leave-one-cell-out validation on real NASA PCoE cells (B0005–B0018)
-- Feature engineering (coulombic efficiency, voltage plateau duration) contributes significantly to R² improvement over raw cycle data
+- The chronological split puts the later cycles of cell 4 in the test set, so training never saw that cell — but all 4 synthetic cells follow the same degradation law, so real cell-to-cell generalisation still needs leave-one-cell-out validation on NASA PCoE cells (B0005–B0018)
+- Inputs are 7 per-cycle features: discharge capacity, mean/min voltage, mean current, mean/max temperature, discharge time
 
 *Results on the held-out test set of the synthetic NASA-like dataset. The data loader also supports the public NASA PCoE Battery Dataset.*
 
@@ -155,8 +155,13 @@ SOH = 1.0 at beginning of life, degrades toward 0.8 (end-of-life threshold).
 **Sequence modelling:** Each training sample is a window of 30 charge/discharge cycles,
 with the target being the SOH value at cycle t+1.
 
-**Feature engineering:** Voltage plateau duration, internal resistance estimate,
-coulombic efficiency, temperature delta per cycle.
+**Features (7 per cycle):** discharge capacity, mean and min voltage, mean current,
+mean and max temperature, discharge time.
+
+**Known limitation:** discharge capacity equals SOH × rated capacity, so the input window already
+contains SOH up to cycle t while the model predicts SOH at t+1. A naive "repeat last value" baseline
+would score close to the LSTM. Next steps: drop capacity-derived inputs, report a persistence
+baseline, and predict several cycles ahead (e.g. SOH at t+10 or remaining useful life).
 
 ---
 
