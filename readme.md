@@ -28,6 +28,7 @@ for partners including Salzgitter AG and E-Bikes Axess. This repo uses no compan
 |-------|-------------|-------------------|
 | LSTM | 2-layer LSTM → Dense | hidden_size=128, dropout=0.2, seq_len=30 |
 | RNN | Vanilla RNN → Dense | hidden_size=64, dropout=0.1 |
+| GRU | 2-layer GRU → Dense | hidden_size=128, dropout=0.2 |
 | Random Forest | Baseline | n_estimators=200, max_depth=10 |
 | SVM | Baseline | kernel=rbf, C=1.0 |
 
@@ -38,15 +39,24 @@ for partners including Salzgitter AG and E-Bikes Axess. This repo uses no compan
 > **Pipeline corrected (Oct 2026).** The first version used two inputs that encode the target
 > (discharge capacity = SOH × 2 Ah, discharge time ≈ SOH × 3600 s) and predicted only one cycle
 > ahead, which inflated R². Both inputs were removed and the model now predicts SOH **10 cycles
-> ahead**, compared against a persistence baseline. LSTM/RNN numbers must be re-generated with
-> `python src/train.py --model all`; the screenshots below are from the earlier run.
+> ahead**, compared against a persistence baseline. Reproduce with `python src/data_loader.py`
+> then `python src/train.py --model all`.
 
 | Model | MAE | RMSE | R² |
 |-------|-----|------|----|
 | Persistence baseline ("SOH stays the same") | 0.0120 | 0.0136 | 0.837 |
-| Random Forest | 0.0042 | 0.0052 | 0.976 |
 | SVM (last-cycle features) | 0.0107 | 0.0134 | 0.842 |
-| LSTM / RNN | re-run pending | | |
+| LSTM | 0.0073 | 0.0098 | 0.916 |
+| RNN | 0.0064 | 0.0082 | 0.941 |
+| GRU | 0.0051 | 0.0065 | 0.963 |
+| **Random Forest** | **0.0042** | **0.0052** | **0.976** |
+
+**Finding:** every sequence model beats the persistence baseline, but the Random Forest on the
+flattened 30-cycle window is the best model here, and the GRU is the best sequence model. With
+only 450 training windows of 5 smooth features, the 201k-parameter LSTM has little to gain from
+modelling order explicitly. Sequence models should pay off with more cells, longer histories and
+noisier real-world cycling, which is the next step with the NASA PCoE data. Single seed;
+differences of a few thousandths in MAE are within run-to-run noise.
 
 *Synthetic NASA-like dataset — 800 cycles across 4 cells, 5 features per cycle, 30-cycle windows,
 10-cycle horizon → 644 sequences (450 train / 97 val / 97 test). The test set is the later life of
